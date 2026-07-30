@@ -1,0 +1,12 @@
+{
+  "_comment": "Copy to data/notify.json and fill in your own identifiers. Remove channels you don't use.",
+  "_profile_note": "discord/slack accept an optional \"profile\" pinning the dscrd/slk CLI profile, so a global `auth switch` elsewhere cannot silently change the sending account. Omit to use whichever profile is active.",
+  "_self_send_note": "iMessage and Slack self-DMs deliver but do NOT raise a phone notification: the platform treats a message from your own account to your own account as a synced sent message. Use them as backup records only; rely on a channel where you are a genuine recipient (e.g. a bot DM) for actual push.",
+  "channels": {
+    "macos": {},
+    "imessage": {"to": "your-apple-id@example.com"},
+    "discord": {"user_id": "your-discord-user-id", "profile": "your-dscrd-profile"},
+    "slack": {"channel": "your-slack-user-id", "profile": "your-slk-profile"},
+    "email": {"to": "you@example.com"}
+  }
+}
