@@ -1,5 +1,12 @@
 # TOST CLI
 
+![License](https://img.shields.io/github/license/howar31/tost?style=flat-square)
+![Made with Python](https://img.shields.io/badge/made%20with-Python-3776AB?style=flat-square&logo=python&logoColor=white)
+![Platform](https://img.shields.io/badge/platform-macOS-000000?style=flat-square&logo=apple)
+![Conventional Commits](https://img.shields.io/badge/conventional%20commits-1.0.0-FE5196?style=flat-square&logo=conventionalcommits&logoColor=white)
+![Last commit](https://img.shields.io/github/last-commit/howar31/tost?style=flat-square)
+![Stars](https://img.shields.io/github/stars/howar31/tost?style=flat-square)
+
 [中文](README.zh-TW.md)
 
 Local Tesla order tracker. Pure Python stdlib, zero third-party dependencies,
