@@ -79,15 +79,34 @@ def _run(argv):
     subprocess.run(argv, capture_output=True, timeout=CHANNEL_TIMEOUT, check=True)
 
 
+def _failure_reason(exc):
+    """Prefer the CLI's own stderr line over the Python exception text."""
+    stderr = getattr(exc, "stderr", None)
+    if stderr:
+        if isinstance(stderr, bytes):
+            stderr = stderr.decode("utf-8", errors="replace")
+        lines = stderr.strip().splitlines()
+        if lines:
+            return lines[0][:200]
+    return f"{type(exc).__name__}: {exc}"[:200]
+
+
 def dispatch(commands, runner=_run):
-    """Run every channel command; isolate failures. Returns {channel: ok}."""
+    """Run every channel command; isolate failures. Returns {channel: ok}.
+
+    Failures never break other channels or the fetch, but they are not
+    silent: each one logs a reason to stderr, which launchd redirects into
+    data/logs/agent.log (dead profile, expired token, missing CLI...).
+    """
     results = {}
     for name, argv in commands:
         try:
             runner(argv)
             results[name] = True
-        except Exception:
+        except Exception as e:
             results[name] = False
+            print(f"[!] notify channel {name} failed: {_failure_reason(e)}",
+                  file=sys.stderr)
     return results
 
 

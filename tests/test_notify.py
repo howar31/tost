@@ -1,4 +1,5 @@
 import io
+import subprocess
 import tempfile
 import unittest
 from contextlib import redirect_stderr
@@ -110,12 +111,49 @@ class TestDispatchIsolation(unittest.TestCase):
             if "discord" in argv[0]:
                 raise RuntimeError("discord down")
 
-        results = notify.dispatch(
-            [("discord", ["discord-cli", "x"]), ("slack", ["slack-cli", "y"])],
-            runner=runner,
-        )
+        with redirect_stderr(io.StringIO()):
+            results = notify.dispatch(
+                [("discord", ["discord-cli", "x"]), ("slack", ["slack-cli", "y"])],
+                runner=runner,
+            )
         self.assertEqual(ran, ["discord-cli", "slack-cli"])
         self.assertEqual(results, {"discord": False, "slack": True})
+
+
+class TestDispatchFailureLogging(unittest.TestCase):
+    def test_failed_channel_logged_to_stderr_with_cli_stderr_excerpt(self):
+        # e.g. dscrd exits 3 with 'profile "X" not found' — the reason must
+        # land in stderr (which launchd redirects into agent.log)
+        def runner(argv):
+            raise subprocess.CalledProcessError(
+                3, argv, stderr=b'dscrd: profile "X" not found\n'
+            )
+
+        err = io.StringIO()
+        with redirect_stderr(err):
+            results = notify.dispatch([("discord", ["dscrd", "dm"])], runner=runner)
+        self.assertEqual(results, {"discord": False})
+        self.assertIn("discord", err.getvalue())
+        self.assertIn('profile "X" not found', err.getvalue())
+
+    def test_failure_without_stderr_logs_exception_text(self):
+        def runner(argv):
+            raise RuntimeError("timeout after 30s")
+
+        err = io.StringIO()
+        with redirect_stderr(err):
+            notify.dispatch([("slack", ["slk", "msg"])], runner=runner)
+        self.assertIn("slack", err.getvalue())
+        self.assertIn("timeout after 30s", err.getvalue())
+
+    def test_successful_channels_log_nothing(self):
+        err = io.StringIO()
+        with redirect_stderr(err):
+            results = notify.dispatch(
+                [("macos", ["osascript"])], runner=lambda argv: None
+            )
+        self.assertEqual(results, {"macos": True})
+        self.assertEqual(err.getvalue(), "")
 
 
 if __name__ == "__main__":

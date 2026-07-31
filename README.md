@@ -59,7 +59,9 @@ urllib.
 
 Change notifications go to the channels configured in `data/notify.json`
 (template: `notify.json.example`). Channels are independent and best-effort;
-a failing channel never affects the other channels or the fetch itself.
+a failing channel never affects the other channels or the fetch itself, and
+each failure is logged with its reason to stderr (the background agent's
+`data/logs/agent.log`).
 
 Supported: macOS Notification Center, iMessage, Discord DM, Slack, Email.
 Discord and Slack ride [dscrd](https://github.com/howar31/dscrd) and

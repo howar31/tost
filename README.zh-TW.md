@@ -52,7 +52,8 @@ Token 交換經由 Apple TLS stack（`swift` 執行 `app/token_post.swift` 原�
 ## 通知管道
 
 變化通知發送到 `data/notify.json` 設定的管道（範本見 `notify.json.example`）。
-各管道獨立、盡力而為，單一管道故障不影響其他管道與抓取本身。
+各管道獨立、盡力而為，單一管道故障不影響其他管道與抓取本身，失敗會連原因
+記錄到 stderr（背景代理即 `data/logs/agent.log`）。
 
 支援：macOS 通知中心、iMessage、Discord DM、Slack、Email。Discord 與 Slack
 經 [dscrd](https://github.com/howar31/dscrd) 與

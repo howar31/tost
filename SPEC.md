@@ -101,8 +101,9 @@ README sync, Conventional Commits).
 - OAuth `state` is generated but not verified — acceptable in a copy-paste
   flow where the user transports the callback URL themselves.
 - Single account, single machine; no GUI, no multi-user, no sharing.
-- Notification channels are best-effort: a failing channel is recorded as
-  failed but never retried; channel failures do not fail the fetch.
+- Notification channels are best-effort: a failing channel is never retried,
+  but each failure is logged with its reason to stderr (agent.log); channel
+  failures do not fail the fetch.
 
 ## Key Decisions
 
