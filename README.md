@@ -25,6 +25,8 @@ python3 tost.py auth              # first run: Tesla login via browser (see belo
 python3 tost.py status            # current order summary (fetches fresh)
 python3 tost.py status --cached   # offline: read the local cache
 python3 tost.py timeline          # change-history timeline
+python3 tost.py timeline --since 2026-07-01
+                                  #   only events newer than that timestamp
 python3 tost.py fetch             # take a snapshot and show changes
 python3 tost.py raw               # full raw JSON
 python3 tost.py export            # summary + events + poll log (dashboard feed)
@@ -106,6 +108,28 @@ npx skills add https://github.com/howar31/tost
 
 Claude Code picks the skill up automatically when working inside this repo;
 other agents can start from [AGENTS.md](AGENTS.md).
+
+### Watching an order over a period
+
+[skills/tost/MONITOR.md](skills/tost/MONITOR.md) is a polling runbook: an agent
+checks the order on an interval and reports each round in plain language, one
+line when nothing changed and a short paragraph when something did. It is
+written to be followed literally by a small, cheap model.
+
+With Claude Code, if your setup has a repeat command:
+
+```
+/model haiku
+/loop 30m Follow skills/tost/MONITOR.md and report this round.
+```
+
+Any other repeating mechanism works too; the runbook only assumes it is invoked
+once per round.
+
+The loop is read-only. It reads the cache the background agent writes and never
+fetches, so it cannot swallow a pending change and suppress its notification.
+An interval shorter than the background agent's refresh (`tost agent status`)
+only produces repeated heartbeats.
 
 ## Tests
 

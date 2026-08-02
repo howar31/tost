@@ -28,6 +28,8 @@ def main(argv=None):
 
     p_timeline = sub.add_parser("timeline", help="change history")
     p_timeline.add_argument("-n", type=int, default=None, help="last N events")
+    p_timeline.add_argument("--since", metavar="ISO",
+                            help="only events strictly newer than this timestamp")
     p_timeline.add_argument("--json", action="store_true")
 
     p_raw = sub.add_parser("raw", help="dump latest snapshot JSON")

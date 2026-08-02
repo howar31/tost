@@ -5,6 +5,10 @@ reference for AI agents; the full runbook is
 [skills/tost/SKILL.md](skills/tost/SKILL.md), installable across agents with
 `npx skills add https://github.com/howar31/tost`.
 
+To run a polling loop that watches the order and reports each round in plain
+language, follow [skills/tost/MONITOR.md](skills/tost/MONITOR.md) instead. It is
+written to be followed literally by a small model.
+
 ## Commands
 
 Run from the TOST checkout (the directory containing `tost.py`):
@@ -14,6 +18,7 @@ Run from the TOST checkout (the directory containing `tost.py`):
 | Current status (fresh fetch) | `python3 tost.py status --json` |
 | Current status (offline/fast) | `python3 tost.py status --cached --json` |
 | Change history | `python3 tost.py timeline --json` |
+| Only what is new since a timestamp | `python3 tost.py timeline --json --since <ISO>` |
 | Full raw snapshot | `python3 tost.py raw` |
 | Force a snapshot now | `python3 tost.py fetch` |
 | Dashboard-shaped export | `python3 tost.py export` |

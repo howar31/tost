@@ -23,6 +23,8 @@ python3 tost.py auth              # 首次：瀏覽器登入 Tesla（見下方�
 python3 tost.py status            # 目前訂單摘要（現抓）
 python3 tost.py status --cached   # 離線看快取
 python3 tost.py timeline          # 歷次變化時間軸
+python3 tost.py timeline --since 2026-07-01
+                                  #（只看該時間點之後的事件）
 python3 tost.py fetch             # 抓快照並顯示變化
 python3 tost.py raw               # 完整原始 JSON
 python3 tost.py export            # 摘要＋事件＋輪詢日誌（dashboard 資料來源）
@@ -89,6 +91,25 @@ npx skills add https://github.com/howar31/tost
 
 Claude Code 在本 repo 目錄內工作時會自動載入；其他 agent 可從
 [AGENTS.md](AGENTS.md) 開始。
+
+### 持續盯著訂單
+
+[skills/tost/MONITOR.md](skills/tost/MONITOR.md) 是一份輪詢 runbook：讓 agent
+每隔一段時間查一次訂單，並用人話回報。沒變化時只印一行，有變化才展開成一小段。
+內容寫得夠細，小型、便宜的模型也能照做。
+
+在 Claude Code 中，若你的環境有重複執行的指令：
+
+```
+/model haiku
+/loop 30m Follow skills/tost/MONITOR.md and report this round.
+```
+
+換成其他重複執行的機制也可以，runbook 只假設自己每輪被呼叫一次。
+
+這個迴圈是唯讀的：它讀背景 agent 寫下的快取，不會自己抓資料，因此不會把還沒
+通知的變化吃掉而讓推播消失。間隔設得比背景 agent 的更新頻率
+（`tost agent status`）還短，只會拿到重複的心跳。
 
 ## 測試
 

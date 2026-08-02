@@ -1,12 +1,15 @@
 """Command implementations: fetch pipeline, summaries, rendering."""
 
 import json
+import re
 import sys
 from datetime import datetime, timezone
 
 from app.diff import diff_snapshots
 
 MODEL_NAMES = {"m3": "Model 3", "my": "Model Y", "ms": "Model S", "mx": "Model X"}
+
+_ISO_DATE_PREFIX = re.compile(r"^\d{4}-\d{2}-\d{2}")
 
 EXIT_OK = 0
 EXIT_ERROR = 1
@@ -71,6 +74,18 @@ def extract_milestones(snapshot):
                     "ts": value, "new": value,
                 })
     return events
+
+
+def filter_since(events, since):
+    """Events strictly newer than `since`, compared as strings.
+
+    History timestamps come in two shapes: fetch-stamped events use
+    "2026-07-31T02:51:54Z", backfilled milestones carry their own historic
+    value with no trailing Z. Lexicographic order is correct across both for
+    the date and time components, and it matches the sort key cmd_timeline
+    already uses, so no timestamp parsing is introduced.
+    """
+    return [e for e in events if e.get("ts", "") > since]
 
 
 def run_fetch(store, get_snapshot, now_iso):
@@ -215,8 +230,17 @@ def cmd_status(args, store, snapshot_fn=None):
 
 
 def cmd_timeline(args, store):
+    since = getattr(args, "since", None)
+    if since is not None and not _ISO_DATE_PREFIX.match(since):
+        # Falling back to "no filter" would dump the whole history and make a
+        # polling agent re-report everything; fail loudly instead.
+        print(f"invalid --since {since!r}: expected an ISO timestamp such as "
+              "2026-07-31T02:51:54Z", file=sys.stderr)
+        return EXIT_ERROR
     # chronological by event time (backfilled milestones predate recording order)
     events = sorted(store.read_history(), key=lambda e: e.get("ts", ""))
+    if since is not None:
+        events = filter_since(events, since)
     if args.n:
         events = events[-args.n:]
     if args.json:

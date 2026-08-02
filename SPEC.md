@@ -6,9 +6,11 @@ Local, self-auditable Tesla order tracker. Polls Tesla's order API for the
 account's orders, keeps an append-only history of every meaningful change
 (VIN assignment, delivery window, appointments), and pushes notifications
 through channels the owner already uses. Runs entirely on the user's Mac:
-no server, no telemetry, no third-party code. Consumed three ways: directly
-as a CLI, unattended via a launchd background agent, and conversationally by
-AI agents through the bundled skill ([skills/tost/SKILL.md](skills/tost/SKILL.md)).
+no server, no telemetry, no third-party code. Consumed four ways: directly
+as a CLI, unattended via a launchd background agent, conversationally by
+AI agents through the bundled skill ([skills/tost/SKILL.md](skills/tost/SKILL.md)),
+and as an ad-hoc polling monitor driven by a small model following
+[skills/tost/MONITOR.md](skills/tost/MONITOR.md).
 
 ## Architecture
 
@@ -44,7 +46,11 @@ tost.py (argparse dispatch)
   backfilled `milestone` events carrying their true historical timestamp).
   A prefix/exact ignore-list drops UI-string churn; the raw archive keeps
   every distinct response byte-for-byte so the filter can never silently
-  destroy information.
+  destroy information. `timeline --since <ISO>` returns only events strictly
+  newer than a timestamp, comparing as strings so the two timestamp shapes in
+  `history.jsonl` (fetch-stamped `...Z` and backfilled historic values) order
+  correctly without parsing; a malformed value exits 1 rather than degrading
+  to an unfiltered dump.
 - **Exit codes (public contract)**: 0 ok · 1 error · 2 changes found ·
   3 re-auth required. JSON to stdout; prompts and progress to stderr.
 
@@ -65,6 +71,7 @@ app/
   agent.py               launchd agent install/uninstall/status
 tests/                   stdlib unittest suite; injectable seams, no mocks
 skills/tost/SKILL.md     agent-facing runbook (SSOT for agent usage)
+skills/tost/MONITOR.md   polling-loop runbook for an ad-hoc monitoring agent
 .claude/skills/tost      symlink → ../../skills/tost (Claude Code auto-load)
 AGENTS.md                cross-tool quick guide for AI agents
 README.md                human docs, English (primary)
@@ -98,6 +105,11 @@ README sync, Conventional Commits).
   handled: retired app versions (far-future `appVersion`) and fingerprinted
   TLS (transport chain).
 - Lists are diffed as opaque scalars (old ≠ new → one `changed` event).
+- `timeline --since` filters on event `ts`, so a `milestone` event backfilled
+  after a monitoring session started would carry a historic timestamp, sort
+  before the watermark, and never be reported. Backfill is deduplicated and
+  fires only on first discovery, so this cannot happen with the current
+  `MILESTONE_FIELDS`; adding an entry later would reintroduce it.
 - OAuth `state` is generated but not verified — acceptable in a copy-paste
   flow where the user transports the callback URL themselves.
 - Single account, single machine; no GUI, no multi-user, no sharing.
@@ -125,3 +137,13 @@ README sync, Conventional Commits).
 - **External CLIs for remote notification channels** — reuses the user's
   already-authenticated tools (dscrd/slk/gws) instead of adding network code
   or credentials to this codebase.
+- **The monitor loop is read-only** (`timeline --since` + `status --cached`
+  only). Any fetch consumes the pending diff, so a monitor that pulled its own
+  data would silently suppress the background agent's notification for exactly
+  the changes it just absorbed. Freshness is deliberately delegated to the
+  launchd agent; the monitor only translates its cache.
+- **The monitor's field dictionary lives in the runbook, not in Python** — a
+  hardcoded severity table would rot against Tesla's schema drift, and
+  interpreting fields the table has never seen is the reason a model is doing
+  the job at all. `MONITOR.md` pairs the dictionary with an explicit fallback
+  rule for unlisted paths.

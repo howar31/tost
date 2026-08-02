@@ -5,7 +5,9 @@
 - Human-facing usage → [README.md](README.md) (EN, primary) and
   [README.zh-TW.md](README.zh-TW.md) — content changes must land in both.
 - Agent-facing usage → [AGENTS.md](AGENTS.md) (quick guide) +
-  [skills/tost/SKILL.md](skills/tost/SKILL.md) (full runbook, SSOT).
+  [skills/tost/SKILL.md](skills/tost/SKILL.md) (full runbook, SSOT) +
+  [skills/tost/MONITOR.md](skills/tost/MONITOR.md) (polling-loop runbook for an
+  ad-hoc monitoring agent, SSOT for that loop).
   `.claude/skills/tost` is a symlink to `skills/tost` — edit the latter.
 - This file: development rules only; do not duplicate usage docs here.
 

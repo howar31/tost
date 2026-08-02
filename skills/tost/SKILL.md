@@ -1,6 +1,6 @@
 ---
 name: tost
-description: Query the user's Tesla order status from local TOST data. Use when the user asks about their Tesla order, delivery window, VIN assignment, order changes, or timeline — e.g. (zh) 「我的特斯拉訂單」「交車日期」「訂單有什麼變化」「VIN 配了嗎」; (en) "my Tesla order", "delivery date", "any order changes", "did I get a VIN".
+description: Query the user's Tesla order status from local TOST data, or run a polling loop that watches the order and reports each round. Use when the user asks about their Tesla order, delivery window, VIN assignment, order changes, or timeline, or asks to keep watching it — e.g. (zh) 「我的特斯拉訂單」「交車日期」「訂單有什麼變化」「VIN 配了嗎」「幫我盯著訂單」「定期回報訂單」; (en) "my Tesla order", "delivery date", "any order changes", "did I get a VIN", "keep monitoring my order".
 ---
 
 # TOST — Tesla Order Status Queries
@@ -9,6 +9,9 @@ All commands run from the TOST checkout (the directory containing `tost.py`).
 The tool is local-only: it talks exclusively to Tesla's API, stores data
 under `data/`.
 
+This file covers one-off questions. For a polling loop that watches the order
+over a period and reports each round, follow [MONITOR.md](MONITOR.md) instead.
+
 ## Commands
 
 | Question | Command |
@@ -16,6 +19,7 @@ under `data/`.
 | Current status (fresh) | `python3 tost.py status --json` |
 | Current status (offline/fast) | `python3 tost.py status --cached --json` |
 | What changed / history | `python3 tost.py timeline --json` |
+| Only what is new since a timestamp | `python3 tost.py timeline --json --since <ISO>` |
 | Anything not in the summary | `python3 tost.py raw` (full snapshot JSON) |
 | Force a snapshot now | `python3 tost.py fetch` |
 | Dashboard-shaped export | `python3 tost.py export` |
