@@ -9,6 +9,10 @@ To run a polling loop that watches the order and reports each round in plain
 language, follow [skills/tost/MONITOR.md](skills/tost/MONITOR.md) instead. It is
 written to be followed literally by a small model.
 
+To look up car-carrier (RoRo) ship arrivals at the delivery port, or follow a
+specific ship, follow [skills/tost/VESSEL.md](skills/tost/VESSEL.md). It fixes
+the data source, the allowed hosts, and the interpretation rules.
+
 ## Commands
 
 Run from the TOST checkout (the directory containing `tost.py`):

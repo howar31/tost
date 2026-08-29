@@ -9,8 +9,10 @@ through channels the owner already uses. Runs entirely on the user's Mac:
 no server, no telemetry, no third-party code. Consumed four ways: directly
 as a CLI, unattended via a launchd background agent, conversationally by
 AI agents through the bundled skill ([skills/tost/SKILL.md](skills/tost/SKILL.md)),
-and as an ad-hoc polling monitor driven by a small model following
-[skills/tost/MONITOR.md](skills/tost/MONITOR.md).
+as an ad-hoc polling monitor driven by a small model following
+[skills/tost/MONITOR.md](skills/tost/MONITOR.md), and for agent-side
+car-carrier arrival lookups at the delivery port following
+[skills/tost/VESSEL.md](skills/tost/VESSEL.md).
 
 ## Architecture
 
@@ -30,8 +32,10 @@ tost.py (argparse dispatch)
    agent ──► app/agent.py  launchd LaunchAgent local.tost (StartInterval, RunAtLoad)
 ```
 
-- **Outbound hosts** (complete list): `auth.tesla.com`,
-  `owner-api.teslamotors.com`, `akamai-apigateway-vfx.tesla.com`.
+- **Outbound hosts** (complete list for the code): `auth.tesla.com`,
+  `owner-api.teslamotors.com`, `akamai-apigateway-vfx.tesla.com`. Agent-side
+  vessel lookups (not this codebase's code) use the separate read-only
+  whitelist fixed in [skills/tost/VESSEL.md](skills/tost/VESSEL.md).
 - **Auth flow**: PKCE S256; redirect is `tesla://auth/callback`, which
   browsers cannot follow — the user copies the callback URL from DevTools.
   The token endpoint fingerprints TLS handshakes, so token requests prefer
@@ -72,6 +76,8 @@ app/
 tests/                   stdlib unittest suite; injectable seams, no mocks
 skills/tost/SKILL.md     agent-facing runbook (SSOT for agent usage)
 skills/tost/MONITOR.md   polling-loop runbook for an ad-hoc monitoring agent
+skills/tost/VESSEL.md    car-carrier arrival lookup runbook (SSOT for vessel
+                         data sources and their host whitelist)
 .claude/skills/tost      symlink → ../../skills/tost (Claude Code auto-load)
 AGENTS.md                cross-tool quick guide for AI agents
 README.md                human docs, English (primary)
@@ -147,3 +153,11 @@ README sync, Conventional Commits).
   interpreting fields the table has never seen is the reason a model is doing
   the job at all. `MONITOR.md` pairs the dictionary with an explicit fallback
   rule for unlisted paths.
+- **Vessel lookups are a runbook, not code** — adding port-data endpoints to
+  the code would break the three-host iron rule and drag scraping fragility
+  into the tested core. Instead `VESSEL.md` pins the public data source
+  (TPNET's XML export), a three-host read-only whitelist, and interpretation
+  rules; the agent executes it with ad-hoc `curl` + stdlib parsing. Queries
+  carry no personal data, and routing through third-party proxies/mirrors is
+  explicitly forbidden (a baseline test agent otherwise reached for a
+  stranger's CORS worker).

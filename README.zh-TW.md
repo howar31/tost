@@ -111,6 +111,15 @@ Claude Code 在本 repo 目錄內工作時會自動載入；其他 agent 可從
 通知的變化吃掉而讓推播消失。間隔設得比背景 agent 的更新頻率
 （`tost agent status`）還短，只會拿到重複的心跳。
 
+### 查交付港的汽車船
+
+[skills/tost/VESSEL.md](skills/tost/VESSEL.md) 是一份查詢 runbook：被問到
+「載車的船到了沒」這類問題時，agent 依它從台灣港務的公開系統（TPNET）拉出
+交付港的汽車船（RoRo）進港預報，必要時再到公開船舶資料庫驗證特定船隻，
+回報時附明確的不確定性說明。runbook 固定了資料來源、三個唯讀 host 的
+白名單與解讀規則；查詢不帶任何個資。注意這超出 CLI 本身的三個 Tesla
+host 範圍：CLI 程式永遠不會連這些站，只有照 runbook 行事的 agent 會。
+
 ## 測試
 
 ```sh

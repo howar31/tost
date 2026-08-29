@@ -131,6 +131,17 @@ fetches, so it cannot swallow a pending change and suppress its notification.
 An interval shorter than the background agent's refresh (`tost agent status`)
 only produces repeated heartbeats.
 
+### Car-carrier arrivals at the delivery port
+
+[skills/tost/VESSEL.md](skills/tost/VESSEL.md) is a lookup runbook: when asked
+about the ship that may carry the ordered vehicle, an agent pulls car-carrier
+(RoRo) arrival forecasts for the delivery port from Taiwan's public port system
+(TPNET), optionally verifies a specific ship against public vessel databases,
+and reports with explicit caveats. The runbook pins the exact data source, an
+allowlist of three read-only hosts, and interpretation rules; queries carry no
+personal data. Note this reaches beyond the CLI's three Tesla hosts: the CLI
+itself never does, only an agent following the runbook.
+
 ## Tests
 
 ```sh

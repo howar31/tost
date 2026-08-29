@@ -7,7 +7,9 @@
 - Agent-facing usage → [AGENTS.md](AGENTS.md) (quick guide) +
   [skills/tost/SKILL.md](skills/tost/SKILL.md) (full runbook, SSOT) +
   [skills/tost/MONITOR.md](skills/tost/MONITOR.md) (polling-loop runbook for an
-  ad-hoc monitoring agent, SSOT for that loop).
+  ad-hoc monitoring agent, SSOT for that loop) +
+  [skills/tost/VESSEL.md](skills/tost/VESSEL.md) (car-carrier arrival lookups,
+  SSOT for vessel data and its host whitelist).
   `.claude/skills/tost` is a symlink to `skills/tost` — edit the latter.
 - This file: development rules only; do not duplicate usage docs here.
 
@@ -21,9 +23,12 @@ python3 tost.py agent status         # background launchd agent state
 ## Iron rules (the reason this project exists)
 - Python stdlib ONLY. No third-party packages, no compiled helpers — the swift
   token transport runs from source (`app/token_post.swift`); keep it that way.
-- Outbound network limited to exactly three hosts: `auth.tesla.com`,
-  `owner-api.teslamotors.com`, `akamai-apigateway-vfx.tesla.com`.
-  Never add hosts or endpoints.
+- Outbound network from the code limited to exactly three hosts:
+  `auth.tesla.com`, `owner-api.teslamotors.com`,
+  `akamai-apigateway-vfx.tesla.com`. Never add hosts or endpoints to the code.
+  Agent-side vessel lookups are the one sanctioned exception, limited to the
+  read-only hosts whitelisted in skills/tost/VESSEL.md — never proxies, never
+  additions, and no personal data in those requests.
 - Tokens live in the macOS Keychain only — never on disk, never in logs, and
   never in argv (Keychain writes go through `security -i` stdin; process
   argv is visible system-wide).

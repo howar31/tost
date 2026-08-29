@@ -1,6 +1,6 @@
 ---
 name: tost
-description: Query the user's Tesla order status from local TOST data, or run a polling loop that watches the order and reports each round. Use when the user asks about their Tesla order, delivery window, VIN assignment, order changes, or timeline, or asks to keep watching it — e.g. (zh) 「我的特斯拉訂單」「交車日期」「訂單有什麼變化」「VIN 配了嗎」「幫我盯著訂單」「定期回報訂單」; (en) "my Tesla order", "delivery date", "any order changes", "did I get a VIN", "keep monitoring my order".
+description: Query the user's Tesla order status from local TOST data, run a polling loop that watches the order and reports each round, or look up car-carrier ship arrivals at the delivery port. Use when the user asks about their Tesla order, delivery window, VIN assignment, order changes, or timeline, asks to keep watching it, or asks about the ship carrying their car — e.g. (zh) 「我的特斯拉訂單」「交車日期」「訂單有什麼變化」「VIN 配了嗎」「幫我盯著訂單」「定期回報訂單」「有汽車船進港嗎」「船到哪了」; (en) "my Tesla order", "delivery date", "any order changes", "did I get a VIN", "keep monitoring my order", "car carrier arrivals", "where is the ship".
 ---
 
 # TOST — Tesla Order Status Queries
@@ -11,6 +11,8 @@ under `data/`.
 
 This file covers one-off questions. For a polling loop that watches the order
 over a period and reports each round, follow [MONITOR.md](MONITOR.md) instead.
+For car-carrier (RoRo) arrivals at the delivery port or following a specific
+ship, follow [VESSEL.md](VESSEL.md).
 
 ## Commands
 
