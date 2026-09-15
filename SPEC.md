@@ -19,9 +19,11 @@ car-carrier arrival lookups at the delivery port following
 ```
 tost.py (argparse dispatch)
    auth ──► app/auth.py    OAuth2 PKCE (client_id=ownerapi) ── tokens ──► macOS Keychain
-                │                                                        (security -i, base64 payload)
+                │                                                        (security -i, base64 payload split
+                │                                                         over items tost, tost.1, … ≤3072 chars)
                 └─ token exchange via app/transport.py: swift URLSession
-                   (app/token_post.swift, run from source) → /usr/bin/curl → urllib
+                   (app/token_post.swift, run from source; CLT toolchain preferred
+                   via DEVELOPER_DIR) → /usr/bin/curl → urllib; fallback warns on stderr
    fetch / status ──► app/cli.py run_fetch pipeline (serialized by flock on data/.lock):
        app/api.py  GET /api/1/users/orders  +  GET /tasks per order  ──► snapshot
        app/diff.py snapshot diff vs data/latest.json, noise-filtered  ──► events
@@ -40,8 +42,14 @@ tost.py (argparse dispatch)
   browsers cannot follow — the user copies the callback URL from DevTools.
   The token endpoint fingerprints TLS handshakes, so token requests prefer
   Apple's URLSession (same TLS family as the official app), falling back to
-  system curl, then urllib (warns). Access-token expiry is read from the JWT
-  `exp` locally (no signature check needed); refresh rewrites the Keychain.
+  system curl, then urllib; whenever a transport fails and a later one
+  succeeds, the failure reason is printed to stderr, since a token minted by
+  a fallback stack may later be rejected by owner-api with 403. The swift
+  helper runs with `DEVELOPER_DIR` pointed at the Command Line Tools
+  toolchain when it is installed: Xcode.app's swift refuses to run until its
+  license is accepted, and every Xcode update resets that. Access-token
+  expiry is read from the JWT `exp` locally (no signature check needed);
+  refresh rewrites the Keychain.
   A refresh rejected with HTTP 4xx raises `AuthRequired` (exit 3); network
   failures and 5xx propagate as transient errors so an offline box never
   prompts a false re-login.
@@ -109,7 +117,8 @@ README sync, Conventional Commits).
 - Tesla's order API is unofficial and drifts; `raw` and `--json` output stay
   usable even when the summary renderer lags behind. Known 403 causes are
   handled: retired app versions (far-future `appVersion`) and fingerprinted
-  TLS (transport chain).
+  TLS (transport chain, including the silent curl fallback that an
+  unaccepted Xcode license used to cause).
 - Lists are diffed as opaque scalars (old ≠ new → one `changed` event).
 - `timeline --since` filters on event `ts`, so a `milestone` event backfilled
   after a monitoring session started would carry a historic timestamp, sort
@@ -127,10 +136,15 @@ README sync, Conventional Commits).
 
 - **Keychain over a plaintext 600 file** — token safety is the project's
   raison d'être; the secret also never appears in process argv
-  (`security -i` reads the command from stdin, payload base64-wrapped).
+  (`security -i` reads the command from stdin, payload base64-wrapped and
+  split over several Keychain items: `security -i` truncates lines at 4096
+  bytes, and a Tesla token set already exceeds that).
 - **Source-run swift helper over an HTTP-impersonation dependency** — keeps
   the zero-third-party, auditable-source guarantee while still presenting a
   browser-grade TLS handshake.
+- **Command Line Tools toolchain over Xcode.app's swift** — same source, same
+  system URLSession (the TLS fingerprint comes from the OS network stack, not
+  the compiler), but no license gate that a background agent cannot answer.
 - **JSON files over SQLite** — auditable with `cat`, trivial data volume.
 - **Dual record: filtered history + raw archive + poll log** —
   `history.jsonl` is the interpreted story, `archive/` the byte-exact ground

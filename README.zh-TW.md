@@ -49,7 +49,8 @@ Tesla 自 2026-07 起只接受 `tesla://auth/callback` 作為跳轉位址，瀏�
 
 Token 交換經由 Apple TLS stack（`swift` 執行 `app/token_post.swift` 原始碼）
 以通過 Tesla 的 TLS 指紋檢查；未安裝 Xcode CLT 時自動跳過 swift，備援依序
-為系統 curl、Python urllib。
+為系統 curl、Python urllib。啟用備援時會把原本 transport 失敗的原因印到
+stderr（備援換發的 token 可能被拒以 403）。
 
 ## 通知管道
 

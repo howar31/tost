@@ -1,4 +1,5 @@
 import unittest
+from pathlib import Path
 
 from app import transport
 
@@ -111,3 +112,66 @@ class TestTransportChain(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestSwiftToolchain(unittest.TestCase):
+    # Xcode.app's swift refuses to run until its license is accepted (every
+    # Xcode update resets that), which silently pushed token minting onto
+    # curl. The Command Line Tools toolchain has no such gate, so prefer it.
+    def _run_recorder(self, calls):
+        class Result:
+            returncode = 0
+            stdout = b"200\n{}"
+            stderr = b""
+
+        def run(argv, **kwargs):
+            calls.append((argv, kwargs))
+            return Result()
+
+        return run
+
+    def test_swift_helper_prefers_clt_toolchain_when_present(self):
+        calls = []
+        transport._post_via_swift(
+            "https://x", b"", {}, run=self._run_recorder(calls),
+            clt_dir=Path("/clt"), exists=lambda p: p == Path("/clt/usr/bin/swift"),
+        )
+        _, kwargs = calls[0]
+        self.assertEqual(kwargs["env"]["DEVELOPER_DIR"], "/clt")
+
+    def test_swift_helper_uses_default_env_without_clt(self):
+        calls = []
+        transport._post_via_swift(
+            "https://x", b"", {}, run=self._run_recorder(calls),
+            clt_dir=Path("/clt"), exists=lambda p: False,
+        )
+        _, kwargs = calls[0]
+        self.assertIsNone(kwargs.get("env"))
+
+
+class TestFallbackWarning(unittest.TestCase):
+    def test_fallback_warns_which_transport_failed(self):
+        warnings = []
+
+        def fake_swift(url, body, headers):
+            raise RuntimeError("You have not agreed to the Xcode license")
+
+        def fake_curl(url, body, headers):
+            return 200, '{"access_token": "tok"}'
+
+        transport.token_post(
+            "https://x", {}, impls={"swift": fake_swift, "curl": fake_curl},
+            order=["swift", "curl"], warn=warnings.append,
+        )
+        self.assertEqual(len(warnings), 1)
+        self.assertIn("swift", warnings[0])
+        self.assertIn("Xcode license", warnings[0])
+        self.assertIn("curl", warnings[0])
+
+    def test_no_warning_when_first_transport_works(self):
+        warnings = []
+        transport.token_post(
+            "https://x", {}, impls={"swift": lambda u, b, h: (200, "{}")},
+            order=["swift"], warn=warnings.append,
+        )
+        self.assertEqual(warnings, [])

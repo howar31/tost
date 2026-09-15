@@ -114,18 +114,37 @@ def _run_security(args, stdin=None):
 class KeychainTokenStore:
     SERVICE = "local.tost.tesla-tokens"
     ACCOUNT = "tost"
+    # `security -i` reads each command into a 4096-byte line buffer. A longer
+    # line is cut: the head runs without its trailing `-U` (fails: item
+    # exists) and the tail runs as a bogus command, so nothing is saved.
+    # Tesla token sets already sit right at that edge, so the payload is
+    # spread over several items: <ACCOUNT>, <ACCOUNT>.1, <ACCOUNT>.2, ...
+    CHUNK_CHARS = 3072
+    MAX_CHUNKS = 32  # hard stop for the read loop; ~96 KB is far beyond any token set
 
     def __init__(self, runner=None):
         self._run = runner or _run_security
 
-    def load(self):
+    def _account(self, index):
+        return self.ACCOUNT if index == 0 else f"{self.ACCOUNT}.{index}"
+
+    def _read_chunk(self, index):
         try:
-            out = self._run(
-                ["find-generic-password", "-a", self.ACCOUNT, "-s", self.SERVICE, "-w"]
-            )
+            return self._run(
+                ["find-generic-password", "-a", self._account(index),
+                 "-s", self.SERVICE, "-w"]
+            ).strip()
         except Exception:
             return None
-        out = out.strip()
+
+    def load(self):
+        chunks = []
+        while len(chunks) < self.MAX_CHUNKS:
+            chunk = self._read_chunk(len(chunks))
+            if not chunk:
+                break
+            chunks.append(chunk)
+        out = "".join(chunks)
         if not out:
             return None
         if not out.startswith("{"):  # current base64 format ("{" = legacy raw JSON)
@@ -134,26 +153,39 @@ class KeychainTokenStore:
 
     def save(self, tokens):
         # The secret rides stdin (`security -i` batch mode) because argv is
-        # visible in the process list. base64 keeps the payload a single token
+        # visible in the process list. base64 keeps each chunk a single token
         # for security's command parser.
         payload = base64.b64encode(
             json.dumps(tokens, separators=(",", ":")).encode()
         ).decode()
+        chunks = [
+            payload[i : i + self.CHUNK_CHARS]
+            for i in range(0, len(payload), self.CHUNK_CHARS)
+        ] or [""]
         self._run(
             ["-i"],
-            stdin=(
-                f"add-generic-password -a {self.ACCOUNT} -s {self.SERVICE} "
-                f"-w {payload} -U\n"  # -U: update in place if the item exists
+            stdin="".join(
+                f"add-generic-password -a {self._account(i)} -s {self.SERVICE} "
+                f"-w {chunk} -U\n"  # -U: update in place if the item exists
+                for i, chunk in enumerate(chunks)
             ),
         )
+        # Drop leftovers from a previous, longer payload.
+        self._delete_from(len(chunks))
+
+    def _delete_from(self, index):
+        while True:
+            try:
+                self._run(
+                    ["delete-generic-password", "-a", self._account(index),
+                     "-s", self.SERVICE]
+                )
+            except Exception:
+                return
+            index += 1
 
     def delete(self):
-        try:
-            self._run(
-                ["delete-generic-password", "-a", self.ACCOUNT, "-s", self.SERVICE]
-            )
-        except Exception:
-            pass
+        self._delete_from(0)
 
 
 def interactive_login(token_store=None):

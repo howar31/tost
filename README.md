@@ -55,7 +55,8 @@ of DevTools:
 The token exchange goes through Apple's TLS stack (`swift` running the
 `app/token_post.swift` source) to pass Tesla's TLS fingerprint check; without
 Xcode CLT it skips swift and falls back to the system curl, then Python
-urllib.
+urllib. Whenever a fallback is used, the reason the preferred transport failed
+is printed to stderr (tokens minted by a fallback may be rejected with 403).
 
 ## Notification channels
 

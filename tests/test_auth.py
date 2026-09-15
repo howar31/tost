@@ -1,6 +1,7 @@
 import base64
 import hashlib
 import json
+import re
 import time
 import unittest
 
@@ -53,26 +54,35 @@ class TestTokenExpired(unittest.TestCase):
         self.assertTrue(token_expired("not-a-jwt"))
 
 
-class FakeRunner:
-    """Records security-CLI invocations; returns canned stdout per subcommand."""
+class ChunkedFakeRunner:
+    """Keys find/delete on the account arg; raises like `security` on a missing item."""
 
-    def __init__(self, responses=None):
+    def __init__(self, items=None):
+        self.items = dict(items or {})
         self.calls = []
-        self.responses = responses or {}
 
     def __call__(self, args, stdin=None):
         self.calls.append((args, stdin))
-        sub = args[0]
-        if sub in self.responses:
-            return self.responses[sub]
-        return ""
+        if args[0] == "-i":
+            for line in stdin.splitlines():
+                m = re.match(r"add-generic-password -a (\S+) -s \S+ -w (\S+) -U$", line)
+                assert m, line
+                self.items[m.group(1)] = m.group(2)
+            return ""
+        account = args[args.index("-a") + 1]
+        if account not in self.items:
+            raise RuntimeError("The specified item could not be found in the keychain.")
+        if args[0] == "delete-generic-password":
+            del self.items[account]
+            return ""
+        return self.items[account] + "\n"
 
 
 class TestKeychainTokenStore(unittest.TestCase):
     def test_save_sends_secret_via_stdin_not_argv(self):
         # argv is visible in the process list; the token JSON must ride stdin
         # (base64-wrapped so `security -i` tokenization cannot mangle it)
-        runner = FakeRunner()
+        runner = ChunkedFakeRunner()
         store = KeychainTokenStore(runner=runner)
         store.save({"access_token": "a", "refresh_token": "r"})
         args, stdin = runner.calls[0]
@@ -85,15 +95,13 @@ class TestKeychainTokenStore(unittest.TestCase):
         self.assertEqual(json.loads(base64.b64decode(payload))["refresh_token"], "r")
 
     def test_load_parses_legacy_plain_json_payload(self):
-        runner = FakeRunner(
-            responses={"find-generic-password": '{"access_token": "a"}\n'}
-        )
+        runner = ChunkedFakeRunner({KeychainTokenStore.ACCOUNT: '{"access_token": "a"}'})
         store = KeychainTokenStore(runner=runner)
         self.assertEqual(store.load(), {"access_token": "a"})
 
     def test_load_parses_base64_payload(self):
         payload = base64.b64encode(b'{"access_token": "a"}').decode()
-        runner = FakeRunner(responses={"find-generic-password": payload + "\n"})
+        runner = ChunkedFakeRunner({KeychainTokenStore.ACCOUNT: payload})
         store = KeychainTokenStore(runner=runner)
         self.assertEqual(store.load(), {"access_token": "a"})
 
@@ -103,6 +111,47 @@ class TestKeychainTokenStore(unittest.TestCase):
 
         store = KeychainTokenStore(runner=failing_runner)
         self.assertIsNone(store.load())
+
+
+class TestKeychainTokenStoreChunking(unittest.TestCase):
+    # `security -i` reads commands into a 4096-byte line buffer; a longer line
+    # is split, the tail runs as a bogus command and the item is never saved.
+    LONG_TOKENS = {"access_token": "a" * 5000, "refresh_token": "r" * 4000}
+
+    def test_save_keeps_every_command_line_under_the_security_line_limit(self):
+        runner = ChunkedFakeRunner()
+        KeychainTokenStore(runner=runner).save(self.LONG_TOKENS)
+        lines = [l for a, s in runner.calls if a == ["-i"] for l in s.splitlines()]
+        self.assertGreater(len(lines), 1)
+        for line in lines:
+            self.assertLess(len(line) + 1, 4096, line[:60])
+            self.assertTrue(line.endswith(" -U"), line[:60])
+        accounts = [l.split()[2] for l in lines]
+        self.assertEqual(accounts[0], KeychainTokenStore.ACCOUNT)
+        self.assertEqual(
+            accounts[1:],
+            [f"{KeychainTokenStore.ACCOUNT}.{i}" for i in range(1, len(lines))],
+        )
+
+    def test_save_then_load_round_trips_long_payload(self):
+        runner = ChunkedFakeRunner()
+        store = KeychainTokenStore(runner=runner)
+        store.save(self.LONG_TOKENS)
+        self.assertEqual(store.load(), self.LONG_TOKENS)
+
+    def test_save_removes_stale_trailing_chunks(self):
+        runner = ChunkedFakeRunner()
+        store = KeychainTokenStore(runner=runner)
+        store.save(self.LONG_TOKENS)
+        self.assertGreater(len(runner.items), 1)
+        store.save({"access_token": "a", "refresh_token": "r"})
+        self.assertEqual(set(runner.items), {KeychainTokenStore.ACCOUNT})
+        self.assertEqual(store.load(), {"access_token": "a", "refresh_token": "r"})
+
+    def test_load_single_item_still_works(self):
+        payload = base64.b64encode(b'{"access_token": "a"}').decode()
+        runner = ChunkedFakeRunner({KeychainTokenStore.ACCOUNT: payload})
+        self.assertEqual(KeychainTokenStore(runner=runner).load(), {"access_token": "a"})
 
 
 class FakeTokenStore:

@@ -31,7 +31,8 @@ python3 tost.py agent status         # background launchd agent state
   additions, and no personal data in those requests.
 - Tokens live in the macOS Keychain only — never on disk, never in logs, and
   never in argv (Keychain writes go through `security -i` stdin; process
-  argv is visible system-wide).
+  argv is visible system-wide). `security -i` truncates lines at 4096 bytes,
+  so the payload is chunked over several items (see `KeychainTokenStore`).
 - No telemetry, no auto-update.
 - `data/` holds personal order data: mode 700, git-ignored. Never edit its
   files, never commit it, never `git add -f` it.
@@ -51,9 +52,12 @@ python3 tost.py agent status         # background launchd agent state
 ## Tesla-side traps
 - The token endpoint fingerprints the TLS handshake: tokens minted over plain
   Python TLS are later rejected by owner-api with 403. Transport chain:
-  swift URLSession (from source) → system curl → urllib (warns). `/usr/bin/swift`
+  swift URLSession (from source) → system curl → urllib. `/usr/bin/swift`
   exists as a stub without Xcode CLT — availability is gated on
-  `xcode-select -p`.
+  `xcode-select -p`. Xcode.app's swift refuses to run until its license is
+  accepted (every Xcode update resets it), so the helper runs with
+  `DEVELOPER_DIR` pointed at the CLT toolchain when present; any transport
+  that fails before a later one succeeds is reported on stderr.
 - `redirect_uri` must be `tesla://auth/callback`; browsers cannot follow the
   scheme, so the auth code is copied out of DevTools (see README).
 - `appVersion` must be the far-future `9.99.9-9999`; retired real build

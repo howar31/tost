@@ -14,12 +14,17 @@ Only token requests go through this module; orders/tasks calls stay in app.api.
 """
 
 import json
+import os
 import shutil
 import subprocess
+import sys
 import urllib.parse
 from pathlib import Path
 
 SWIFT_HELPER = Path(__file__).resolve().parent / "token_post.swift"
+# Xcode.app's swift refuses to run until its license is accepted (reset by
+# every Xcode update); the Command Line Tools toolchain has no such gate.
+CLT_DIR = Path("/Library/Developer/CommandLineTools")
 CURL_BIN = "/usr/bin/curl"
 TIMEOUT = 60
 
@@ -76,11 +81,15 @@ def _post_via_curl(url, body, headers):
     return int(status_line.strip() or 0), payload
 
 
-def _post_via_swift(url, body, headers):
+def _post_via_swift(url, body, headers, run=subprocess.run, clt_dir=CLT_DIR,
+                    exists=Path.exists):
     argv = ["swift", str(SWIFT_HELPER), url]
     for name, value in (headers or {}).items():
         argv.append(f"{name}: {value}")
-    result = subprocess.run(argv, input=body, capture_output=True, timeout=TIMEOUT + 60)
+    env = None
+    if exists(clt_dir / "usr" / "bin" / "swift"):
+        env = {**os.environ, "DEVELOPER_DIR": str(clt_dir)}
+    result = run(argv, input=body, capture_output=True, timeout=TIMEOUT + 60, env=env)
     if result.returncode != 0:
         raise RuntimeError(f"swift helper failed: {result.stderr.decode(errors='replace').strip()[:300]}")
     out = result.stdout.decode("utf-8", errors="replace")
@@ -103,11 +112,17 @@ def _post_via_urllib(url, body, headers):
 _IMPLS = {"swift": _post_via_swift, "curl": _post_via_curl, "urllib": _post_via_urllib}
 
 
-def token_post(url, fields, headers=None, impls=None, order=None):
+def _warn(message):
+    print(f"[!] {message}", file=sys.stderr)
+
+
+def token_post(url, fields, headers=None, impls=None, order=None, warn=_warn):
     """POST form fields via the first working transport.
 
     Returns (parsed_json, transport_name). Raises TokenTransportError when the
-    endpoint returns an HTTP error or every transport fails.
+    endpoint returns an HTTP error or every transport fails. A transport that
+    failed before a later one succeeded is reported through `warn`: a token
+    minted by a fallback stack may later be rejected by owner-api with 403.
     """
     impls = impls or _IMPLS
     if order is None:
@@ -128,9 +143,13 @@ def token_post(url, fields, headers=None, impls=None, order=None):
                 status=status,
             )
         try:
-            return json.loads(payload), name
+            result = json.loads(payload)
         except json.JSONDecodeError as e:
             attempts.append(f"{name}: invalid JSON ({e})")
+            continue
+        if attempts:
+            warn("; ".join(attempts) + f" — token minted via {name} instead")
+        return result, name
     raise TokenTransportError(
         "all token transports failed — " + "; ".join(attempts)
     )
