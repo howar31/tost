@@ -148,8 +148,9 @@ STATE since=2026-07-31T02:51:54Z
 ```
 
 **Stale cache marker.** Compare `fetched_at` from the status output with the UTC
-timestamp from `date -u`. The background agent refreshes every 30 minutes, so a gap
-beyond roughly 90 minutes means it has probably stopped. Precision is not needed:
+timestamp from `date -u`. The background agent refreshes at most every 60 minutes
+(the default interval), so a gap beyond roughly 90 minutes means it has probably
+stopped. Precision is not needed:
 if the date differs, or the UTC hour differs by 2 or more, append this to the
 heartbeat line:
 
@@ -240,7 +241,7 @@ From the TOST checkout, in a Claude Code session:
 /loop 30m Follow skills/tost/MONITOR.md and report this round.
 ```
 
-An interval shorter than the background agent's refresh (30 minutes by default,
+An interval shorter than the background agent's refresh (60 minutes by default,
 check with `python3 tost.py agent status`) only produces heartbeats with no new
 information, because this loop reads that agent's cache and never fetches on its
 own.
