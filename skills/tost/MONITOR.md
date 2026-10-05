@@ -82,6 +82,8 @@ The user has explicitly asked to see all changes.
 |---|---|---|
 | `order.vin` | 配到 VIN（最早出現的位置） | milestone |
 | `details.tasks.deliveryDetails.regData.orderDetails.vin` | 配到 VIN | milestone |
+| `details.tasks.scheduling.isInventoryOrMatched` | 配車狀態旗標（true 為已配車，轉回 false 為取消配車） | milestone |
+| `details.tasks.tradeIn.isMatched` | 配車狀態旗標，同上 | milestone |
 | `details.tasks.scheduling.deliveryWindowDisplay` | 交車時間窗出現或收窄 | milestone |
 | `details.tasks.scheduling.deliveryAppointmentDate` | 交車預約成立或改期 | milestone |
 | `order.orderStatus` | 訂單狀態變更 | milestone |

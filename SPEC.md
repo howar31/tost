@@ -60,8 +60,10 @@ tost.py (argparse dispatch)
   every distinct response byte-for-byte so the filter can never silently
   destroy information. VIN assignment is tracked at `order.vin`, the location
   Tesla populates first; the task-level copies that fill in later are on the
-  ignore-list as duplicates. `timeline --since <ISO>` returns only events strictly
-  newer than a timestamp, comparing as strings so the two timestamp shapes in
+  ignore-list as duplicates. The match flags that flip together with it
+  (`scheduling.isInventoryOrMatched`, `tradeIn.isMatched`) are tracked too,
+  so a reverted match is reported. `timeline --since <ISO>` returns only
+  events strictly newer than a timestamp, comparing as strings so the two timestamp shapes in
   `history.jsonl` (fetch-stamped `...Z` and backfilled historic values) order
   correctly without parsing; a malformed value exits 1 rather than degrading
   to an unfiltered dump.

@@ -47,9 +47,18 @@ class TestFilterIgnored(unittest.TestCase):
                          "details.tasks.scheduling.deliveryWindowDisplay")
 
     def test_exact_ignored_key_dropped(self):
-        events = [{"op": "changed", "key": "details.tasks.tradeIn.isMatched",
-                   "old": False, "new": True}]
+        events = [{"op": "changed", "key": "details.tasks.finalPayment.data.vehicleId",
+                   "old": None, "new": 1}]
         self.assertEqual(filter_ignored(events), [])
+
+    def test_match_flags_kept(self):
+        events = [
+            {"op": "changed", "key": "details.tasks.scheduling.isInventoryOrMatched",
+             "old": True, "new": False},
+            {"op": "changed", "key": "details.tasks.tradeIn.isMatched",
+             "old": True, "new": False},
+        ]
+        self.assertEqual(filter_ignored(events), events)
 
     def test_order_level_vin_kept(self):
         # order.vin is populated before any task-level VIN location.
