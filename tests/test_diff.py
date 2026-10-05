@@ -47,8 +47,20 @@ class TestFilterIgnored(unittest.TestCase):
                          "details.tasks.scheduling.deliveryWindowDisplay")
 
     def test_exact_ignored_key_dropped(self):
-        events = [{"op": "changed", "key": "order.vin", "old": "", "new": "X"}]
+        events = [{"op": "changed", "key": "details.tasks.tradeIn.isMatched",
+                   "old": False, "new": True}]
         self.assertEqual(filter_ignored(events), [])
+
+    def test_order_level_vin_kept(self):
+        # order.vin is populated before any task-level VIN location.
+        events = [{"op": "added", "key": "order.vin", "new": "5YJ00000000000000"}]
+        self.assertEqual(filter_ignored(events), events)
+
+    def test_vehicle_model_year_kept(self):
+        events = [{"op": "added",
+                   "key": "details.tasks.registration.orderDetails.vehicleModelYear",
+                   "new": "2027"}]
+        self.assertEqual(filter_ignored(events), events)
 
 
 class TestDiffSnapshots(unittest.TestCase):
@@ -72,6 +84,17 @@ class TestDiffSnapshots(unittest.TestCase):
         old = {"RN1": {"order": {}, "details": {}}}
         events = diff_snapshots(old, {})
         self.assertEqual(events, [{"op": "vanished", "order": "RN1", "key": ""}])
+
+    def test_vin_assigned_at_order_level_only_is_reported(self):
+        old = {"RN1": {"order": {"orderStatus": "BOOKED"}, "details": {"tasks": {}}}}
+        new = {"RN1": {"order": {"orderStatus": "BOOKED",
+                                 "vin": "5YJ00000000000000"},
+                       "details": {"tasks": {}}}}
+        self.assertEqual(
+            diff_snapshots(old, new),
+            [{"op": "added", "key": "order.vin", "new": "5YJ00000000000000",
+              "order": "RN1"}],
+        )
 
     def test_noise_keys_filtered_from_order_diff(self):
         old = {"RN1": {"order": {}, "details": {"strings": {"a": 1}}}}

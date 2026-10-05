@@ -58,7 +58,9 @@ tost.py (argparse dispatch)
   backfilled `milestone` events carrying their true historical timestamp).
   A prefix/exact ignore-list drops UI-string churn; the raw archive keeps
   every distinct response byte-for-byte so the filter can never silently
-  destroy information. `timeline --since <ISO>` returns only events strictly
+  destroy information. VIN assignment is tracked at `order.vin`, the location
+  Tesla populates first; the task-level copies that fill in later are on the
+  ignore-list as duplicates. `timeline --since <ISO>` returns only events strictly
   newer than a timestamp, comparing as strings so the two timestamp shapes in
   `history.jsonl` (fetch-stamped `...Z` and backfilled historic values) order
   correctly without parsing; a malformed value exits 1 rather than degrading

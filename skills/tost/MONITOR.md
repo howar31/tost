@@ -80,6 +80,7 @@ The user has explicitly asked to see all changes.
 
 | Path | Plain language | Severity |
 |---|---|---|
+| `order.vin` | 配到 VIN（最早出現的位置） | milestone |
 | `details.tasks.deliveryDetails.regData.orderDetails.vin` | 配到 VIN | milestone |
 | `details.tasks.scheduling.deliveryWindowDisplay` | 交車時間窗出現或收窄 | milestone |
 | `details.tasks.scheduling.deliveryAppointmentDate` | 交車預約成立或改期 | milestone |
@@ -87,6 +88,7 @@ The user has explicitly asked to see all changes.
 | `details.tasks.scheduling.deliveryAddressTitle` | 交付中心變更 | routine |
 | `details.tasks.finalPayment.data.etaToDeliveryCenter` | 預計抵達交付中心的時間 | routine |
 | `details.tasks.registration.orderDetails.vehicleOdometer` | 車輛里程數 | routine |
+| `details.tasks.registration.orderDetails.vehicleModelYear` | 車輛年式 | routine |
 | `registration.startedOn` | 註冊流程開始 | routine |
 | `details.tasks.insurance.*` | 保險任務欄位 | routine |
 | `details.tasks.financing.*` | 貸款任務欄位 | routine |

@@ -5,13 +5,12 @@
 # flags that toggle without an order-state meaning.
 # Entries ending with "." are prefixes; others match exactly.
 IGNORED_KEYS = {
-    "order.vin",  # duplicated at details.tasks.deliveryDetails.regData.orderDetails.vin
+    # Duplicates of order.vin, which is populated first and stays tracked.
     "details.tasks.registration.orderDetails.vin",
     "details.tasks.registration.regData.orderDetails.vin",
     "details.tasks.finalPayment.data.vin",
     "details.tasks.tradeIn.isMatched",
     "details.tasks.registration.isMatched",
-    "details.tasks.registration.orderDetails.vehicleModelYear",
     "details.state.",
     "details.strings.",
     "details.scheduling.card.",
