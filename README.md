@@ -93,10 +93,17 @@ organization accounts.
 
 ### macOS automation permission
 
-The iMessage channel needs Automation permission (a dialog appears on first
-send). If the background agent and manual runs use the same Python
-interpreter path, they are the same TCC subject — authorizing once covers
-both.
+The iMessage channel needs Automation permission for Messages (a dialog
+appears on first send). macOS ties the grant to the Python interpreter that
+sends the message.
+
+With the Xcode Command Line Tools installed, `agent install` runs the
+background agent on the system `/usr/bin/python3`, pinned to the Command Line
+Tools toolchain. The system interpreter is Apple-signed, so its grant stays
+valid across updates. A Homebrew Python is ad-hoc signed: after each upgrade
+macOS treats it as a new program, the earlier grant no longer applies, and the
+new entry cannot be switched on in System Settings. To move an existing agent
+to the system interpreter, run `agent install` again.
 
 ## AI agents
 

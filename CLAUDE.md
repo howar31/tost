@@ -18,7 +18,10 @@
 python3 -m unittest discover tests   # must stay green
 python3 tost.py status --cached      # smoke test without network
 python3 tost.py agent status         # background launchd agent state
+DEVELOPER_DIR=/Library/Developer/CommandLineTools /usr/bin/python3 -m unittest discover tests
 ```
+The launchd agent runs on the system `/usr/bin/python3` (3.9): no syntax or
+stdlib APIs newer than 3.9; the suite must pass on both interpreters.
 
 ## Iron rules (the reason this project exists)
 - Python stdlib ONLY. No third-party packages, no compiled helpers — the swift

@@ -61,13 +61,25 @@ class TestCmdStatus(unittest.TestCase):
 
 
 class TestPickPython(unittest.TestCase):
-    def test_prefers_unversioned_homebrew_symlink(self):
+    def test_prefers_system_python_when_developer_tools_installed(self):
         from app.agent import pick_python
 
         picked = pick_python(
             candidates=["/opt/homebrew/bin/python3"],
             exists=lambda p: True,
             fallback="/opt/homebrew/opt/python@3.14/bin/python3.14",
+            clt_installed=lambda: True,
+        )
+        self.assertEqual(picked, "/usr/bin/python3")
+
+    def test_skips_system_stub_without_developer_tools(self):
+        from app.agent import pick_python
+
+        picked = pick_python(
+            candidates=["/opt/homebrew/bin/python3"],
+            exists=lambda p: True,
+            fallback="/opt/homebrew/opt/python@3.14/bin/python3.14",
+            clt_installed=lambda: False,
         )
         self.assertEqual(picked, "/opt/homebrew/bin/python3")
 
@@ -78,8 +90,32 @@ class TestPickPython(unittest.TestCase):
             candidates=["/opt/homebrew/bin/python3"],
             exists=lambda p: False,
             fallback="/usr/local/bin/python3.12",
+            clt_installed=lambda: False,
         )
         self.assertEqual(picked, "/usr/local/bin/python3.12")
+
+
+class TestAgentEnv(unittest.TestCase):
+    def test_system_python_pinned_to_clt_toolchain(self):
+        from app.agent import agent_env
+
+        env = agent_env("/usr/bin/python3", clt_dir=Path("/clt"),
+                        exists=lambda p: True)
+        self.assertEqual(env, {"DEVELOPER_DIR": "/clt"})
+
+    def test_no_override_without_clt_python(self):
+        from app.agent import agent_env
+
+        env = agent_env("/usr/bin/python3", clt_dir=Path("/clt"),
+                        exists=lambda p: False)
+        self.assertIsNone(env)
+
+    def test_no_override_for_other_interpreters(self):
+        from app.agent import agent_env
+
+        env = agent_env("/opt/homebrew/bin/python3", clt_dir=Path("/clt"),
+                        exists=lambda p: True)
+        self.assertIsNone(env)
 
 
 class TestEnsureLogDir(unittest.TestCase):
@@ -128,6 +164,21 @@ class TestAgentPlist(unittest.TestCase):
                         interval_minutes=30)
         )
         self.assertEqual(data["StartInterval"], 1800)
+
+    def test_plist_has_no_environment_by_default(self):
+        import plistlib
+
+        data = plistlib.loads(build_plist("/usr/bin/python3", "/x/tost.py", "/x/log"))
+        self.assertNotIn("EnvironmentVariables", data)
+
+    def test_plist_carries_environment_when_given(self):
+        import plistlib
+
+        data = plistlib.loads(
+            build_plist("/usr/bin/python3", "/x/tost.py", "/x/log",
+                        env={"DEVELOPER_DIR": "/clt"})
+        )
+        self.assertEqual(data["EnvironmentVariables"], {"DEVELOPER_DIR": "/clt"})
 
 
 if __name__ == "__main__":

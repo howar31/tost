@@ -31,7 +31,9 @@ tost.py (argparse dispatch)
                     (sha256-deduped audit trail) · observations.jsonl (poll log)
        app/notify.py fan-out on changes: macOS / iMessage (osascript),
                     Discord (dscrd) / Slack (slk) / Email (gws) via external CLIs
-   agent ──► app/agent.py  launchd LaunchAgent local.tost (StartInterval, RunAtLoad)
+   agent ──► app/agent.py  launchd LaunchAgent local.tost (StartInterval, RunAtLoad);
+                interpreter: /usr/bin/python3 + DEVELOPER_DIR=CLT when xcode-select
+                resolves, else Homebrew python3, else sys.executable
 ```
 
 - **Outbound hosts** (complete list for the code): `auth.tesla.com`,
@@ -112,6 +114,8 @@ README sync, Conventional Commits).
   `token_request`, `snapshot_fn`, `impls/order`).
 - Live smoke: `python3 tost.py status --cached` (no network) or
   `python3 tost.py fetch` (real API; requires prior `auth`).
+- System-python compatibility: `DEVELOPER_DIR=/Library/Developer/CommandLineTools
+  /usr/bin/python3 -m unittest discover tests` (the launchd agent's interpreter, 3.9).
 - Background agent: `python3 tost.py agent status`, log at
   `data/logs/agent.log`.
 
@@ -149,6 +153,13 @@ README sync, Conventional Commits).
 - **Command Line Tools toolchain over Xcode.app's swift** — same source, same
   system URLSession (the TLS fingerprint comes from the OS network stack, not
   the compiler), but no license gate that a background agent cannot answer.
+- **System python for the launchd agent** — `agent install` prefers the
+  Apple-signed `/usr/bin/python3` (when xcode-select resolves; otherwise it is
+  an install-dialog stub) with `DEVELOPER_DIR` pinned to the CLT toolchain.
+  A Homebrew python is ad-hoc signed, so each upgrade makes it a new TCC
+  subject: the iMessage channel's Automation grant is lost and the new entry
+  cannot be enabled in System Settings. Consequence: the code must stay
+  compatible with the system python (3.9).
 - **JSON files over SQLite** — auditable with `cat`, trivial data volume.
 - **Dual record: filtered history + raw archive + poll log** —
   `history.jsonl` is the interpreted story, `archive/` the byte-exact ground

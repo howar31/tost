@@ -78,8 +78,14 @@ Discord / Slack CLI，需自行安裝與認證；兩者皆支援 `profile` 欄�
 
 ### macOS 自動化權限
 
-iMessage 管道需要自動化權限（首次發送會跳對話框）。背景排程與手動執行若使用
-同一個 Python 直譯器路徑，屬同一個 TCC 主體，授權一次即涵蓋兩者。
+iMessage 管道需要控制「訊息」的自動化權限（首次發送會跳對話框）。macOS 依
+發送訊息的 Python 直譯器記錄授權。
+
+已安裝 Xcode Command Line Tools 時，`agent install` 會讓背景排程使用系統的
+`/usr/bin/python3`，並固定使用 Command Line Tools 工具鏈。系統直譯器由 Apple
+簽章，授權在更新後仍有效。Homebrew 的 Python 為 ad-hoc 簽章，每次升級後
+macOS 會視為新程式，原本的授權不再適用，且新項目無法在系統設定中開啟。已安裝
+的排程要改用系統直譯器，重新執行 `agent install` 即可。
 
 ## AI agent
 

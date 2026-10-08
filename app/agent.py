@@ -6,6 +6,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from app.transport import CLT_DIR, _clt_installed
+
 LABEL = "local.tost"
 DEFAULT_INTERVAL_MINUTES = 60
 
@@ -14,7 +16,8 @@ def plist_path():
     return Path.home() / "Library" / "LaunchAgents" / f"{LABEL}.plist"
 
 
-def build_plist(python_path, entry_path, log_path, interval_minutes=DEFAULT_INTERVAL_MINUTES):
+def build_plist(python_path, entry_path, log_path, interval_minutes=DEFAULT_INTERVAL_MINUTES,
+                env=None):
     """Pure: returns the plist as bytes."""
     data = {
         "Label": LABEL,
@@ -25,6 +28,8 @@ def build_plist(python_path, entry_path, log_path, interval_minutes=DEFAULT_INTE
         "StandardErrorPath": str(log_path),
         "WorkingDirectory": str(Path(entry_path).parent),
     }
+    if env:
+        data["EnvironmentVariables"] = dict(env)
     return plistlib.dumps(data)
 
 
@@ -32,16 +37,35 @@ def _domain():
     return f"gui/{os.getuid()}"
 
 
+# The system python is Apple-signed, so its TCC identity survives OS and
+# toolchain updates; the Automation grant for Messages (iMessage channel) stays
+# valid. Homebrew's python is ad-hoc signed and every upgrade turns it into a
+# new TCC subject whose Automation grant is lost and cannot be re-enabled in
+# System Settings. /usr/bin/python3 is a stub without developer tools (running
+# it pops an install dialog), so it is only picked when xcode-select resolves.
+SYSTEM_PYTHON = "/usr/bin/python3"
 # Homebrew's unversioned symlink survives python upgrades; sys.executable
 # resolves to a versioned path (…/python@3.14/…) that dies on `brew cleanup`.
 PYTHON_CANDIDATES = ["/opt/homebrew/bin/python3", "/usr/local/bin/python3"]
 
 
-def pick_python(candidates=None, exists=os.path.exists, fallback=None):
+def pick_python(candidates=None, exists=os.path.exists, fallback=None,
+                clt_installed=_clt_installed):
+    if clt_installed() and exists(SYSTEM_PYTHON):
+        return SYSTEM_PYTHON
     for candidate in candidates if candidates is not None else PYTHON_CANDIDATES:
         if exists(candidate):
             return candidate
     return fallback if fallback is not None else sys.executable
+
+
+def agent_env(python_path, clt_dir=CLT_DIR, exists=Path.exists):
+    """Pin the system python to the Command Line Tools toolchain: with
+    xcode-select pointing at Xcode.app, /usr/bin/python3 refuses to run after
+    every Xcode update until the license is accepted again."""
+    if python_path == SYSTEM_PYTHON and exists(clt_dir / "usr" / "bin" / "python3"):
+        return {"DEVELOPER_DIR": str(clt_dir)}
+    return None
 
 
 def ensure_log_dir(log_path):
@@ -62,7 +86,9 @@ def install(entry_path, log_path, interval_minutes=DEFAULT_INTERVAL_MINUTES):
     ensure_log_dir(log_path)
     path = plist_path()
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_bytes(build_plist(pick_python(), entry_path, log_path, interval_minutes))
+    python_path = pick_python()
+    path.write_bytes(build_plist(python_path, entry_path, log_path, interval_minutes,
+                                 env=agent_env(python_path)))
     subprocess.run(["launchctl", "bootout", f"{_domain()}/{LABEL}"],
                    capture_output=True)  # ignore "not loaded"
     result = subprocess.run(["launchctl", "bootstrap", _domain(), str(path)],
