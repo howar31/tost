@@ -9,7 +9,9 @@
   [skills/tost/MONITOR.md](skills/tost/MONITOR.md) (polling-loop runbook for an
   ad-hoc monitoring agent, SSOT for that loop) +
   [skills/tost/VESSEL.md](skills/tost/VESSEL.md) (car-carrier arrival lookups,
-  SSOT for vessel data and its host whitelist).
+  SSOT for vessel data and its host whitelist) +
+  [skills/tost/PARTS.md](skills/tost/PARTS.md) (parts-catalog hardware
+  lookups, SSOT for those hosts and the API-first method).
   `.claude/skills/tost` is a symlink to `skills/tost` — edit the latter.
 - This file: development rules only; do not duplicate usage docs here.
 
@@ -29,9 +31,11 @@ stdlib APIs newer than 3.9; the suite must pass on both interpreters.
 - Outbound network from the code limited to exactly three hosts:
   `auth.tesla.com`, `owner-api.teslamotors.com`,
   `akamai-apigateway-vfx.tesla.com`. Never add hosts or endpoints to the code.
-  Agent-side vessel lookups are the one sanctioned exception, limited to the
-  read-only hosts whitelisted in skills/tost/VESSEL.md — never proxies, never
-  additions, and no personal data in those requests.
+  Agent-side lookups are the only sanctioned exceptions, never proxies, never
+  additions: vessel lookups to the read-only hosts in skills/tost/VESSEL.md
+  (no personal data), and parts lookups to the Tesla catalog/shop hosts in
+  skills/tost/PARTS.md (the VIN is the only personal datum allowed; API
+  first, browser automation only after asking the user).
 - Tokens live in the macOS Keychain only — never on disk, never in logs, and
   never in argv (Keychain writes go through `security -i` stdin; process
   argv is visible system-wide). `security -i` truncates lines at 4096 bytes,

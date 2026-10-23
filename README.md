@@ -150,6 +150,19 @@ allowlist of three read-only hosts, and interpretation rules; queries carry no
 personal data. Note this reaches beyond the CLI's three Tesla hosts: the CLI
 itself never does, only an agent following the runbook.
 
+### Hardware revision from the parts catalog
+
+[skills/tost/PARTS.md](skills/tost/PARTS.md) is a lookup runbook for questions
+about which hardware revision the ordered vehicle was built with (for example
+the thermal module, or the power electronics that decide V2L support). An
+agent queries Tesla's official parts catalog by VIN and reports the entries
+marked as original fitment. The runbook limits the hosts to Tesla's catalog
+and shop, allows the VIN as the only personal data sent, never signs in, and
+uses the catalog's data API first; browser automation runs only after the user
+approves it. When the API is blocked, the agent walks the user through the
+catalog instead. As with vessel lookups, only an agent following the runbook
+reaches these hosts; the CLI does not.
+
 ## Tests
 
 ```sh

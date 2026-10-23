@@ -127,6 +127,16 @@ Claude Code 在本 repo 目錄內工作時會自動載入；其他 agent 可從
 白名單與解讀規則；查詢不帶任何個資。注意這超出 CLI 本身的三個 Tesla
 host 範圍：CLI 程式永遠不會連這些站，只有照 runbook 行事的 agent 會。
 
+### 從零件目錄查硬體版本
+
+[skills/tost/PARTS.md](skills/tost/PARTS.md) 是一份查詢 runbook，用來回答
+「這台車出廠裝的是哪一版硬體」這類問題（例如熱管理模組，或決定能否支援
+V2L 的電力轉換模組）。agent 以 VIN 查 Tesla 官方零件目錄，回報標示為原廠
+安裝的零件。runbook 把連線限定在 Tesla 的零件目錄與商店，送出的個資只有
+VIN，不代為登入，並優先使用目錄的資料 API；瀏覽器自動化須先經使用者同意
+才會執行。API 被擋時，agent 改為引導使用者自行在目錄中查詢。與查船相同，
+只有照 runbook 行事的 agent 會連這些站，CLI 不會。
+
 ## 測試
 
 ```sh

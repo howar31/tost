@@ -13,6 +13,11 @@ To look up car-carrier (RoRo) ship arrivals at the delivery port, or follow a
 specific ship, follow [skills/tost/VESSEL.md](skills/tost/VESSEL.md). It fixes
 the data source, the allowed hosts, and the interpretation rules.
 
+To find which hardware revision the ordered vehicle was built with (thermal
+module, power electronics, accessory fit), follow
+[skills/tost/PARTS.md](skills/tost/PARTS.md). It fixes the Tesla catalog/shop
+hosts, the VIN-only data rule, and the API-first method.
+
 ## Commands
 
 Run from the TOST checkout (the directory containing `tost.py`):

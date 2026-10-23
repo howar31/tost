@@ -12,7 +12,9 @@ AI agents through the bundled skill ([skills/tost/SKILL.md](skills/tost/SKILL.md
 as an ad-hoc polling monitor driven by a small model following
 [skills/tost/MONITOR.md](skills/tost/MONITOR.md), and for agent-side
 car-carrier arrival lookups at the delivery port following
-[skills/tost/VESSEL.md](skills/tost/VESSEL.md).
+[skills/tost/VESSEL.md](skills/tost/VESSEL.md), and for agent-side
+hardware-revision lookups in Tesla's parts catalog following
+[skills/tost/PARTS.md](skills/tost/PARTS.md).
 
 ## Architecture
 
@@ -39,7 +41,9 @@ tost.py (argparse dispatch)
 - **Outbound hosts** (complete list for the code): `auth.tesla.com`,
   `owner-api.teslamotors.com`, `akamai-apigateway-vfx.tesla.com`. Agent-side
   vessel lookups (not this codebase's code) use the separate read-only
-  whitelist fixed in [skills/tost/VESSEL.md](skills/tost/VESSEL.md).
+  whitelist fixed in [skills/tost/VESSEL.md](skills/tost/VESSEL.md);
+  agent-side parts lookups use the Tesla catalog/shop hosts fixed in
+  [skills/tost/PARTS.md](skills/tost/PARTS.md).
 - **Auth flow**: PKCE S256; redirect is `tesla://auth/callback`, which
   browsers cannot follow — the user copies the callback URL from DevTools.
   The token endpoint fingerprints TLS handshakes, so token requests prefer
@@ -92,6 +96,8 @@ skills/tost/SKILL.md     agent-facing runbook (SSOT for agent usage)
 skills/tost/MONITOR.md   polling-loop runbook for an ad-hoc monitoring agent
 skills/tost/VESSEL.md    car-carrier arrival lookup runbook (SSOT for vessel
                          data sources and their host whitelist)
+skills/tost/PARTS.md     parts-catalog hardware lookup runbook (SSOT for
+                         catalog/shop hosts and the API-first method)
 .claude/skills/tost      symlink → ../../skills/tost (Claude Code auto-load)
 AGENTS.md                cross-tool quick guide for AI agents
 README.md                human docs, English (primary)
@@ -190,3 +196,10 @@ README sync, Conventional Commits).
   carry no personal data, and routing through third-party proxies/mirrors is
   explicitly forbidden (a baseline test agent otherwise reached for a
   stranger's CORS worker).
+- **Parts lookups are a runbook too, and the VIN is their only personal
+  datum** — the catalog keys fitment by VIN, so `PARTS.md` allows exactly
+  that, to Tesla's own catalog/shop hosts only, and never signs in. Its data
+  API is undocumented and Akamai blocks non-browser clients after a few
+  probes, so the runbook uses the observed read-only endpoints once, then
+  falls back to guiding the user; headless-browser automation needs the
+  user's per-lookup approval.

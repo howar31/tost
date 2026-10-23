@@ -1,6 +1,6 @@
 ---
 name: tost
-description: Query the user's Tesla order status from local TOST data, run a polling loop that watches the order and reports each round, or look up car-carrier ship arrivals at the delivery port. Use when the user asks about their Tesla order, delivery window, VIN assignment, order changes, or timeline, asks to keep watching it, or asks about the ship carrying their car — e.g. (zh) 「我的特斯拉訂單」「交車日期」「訂單有什麼變化」「VIN 配了嗎」「幫我盯著訂單」「定期回報訂單」「有汽車船進港嗎」「船到哪了」; (en) "my Tesla order", "delivery date", "any order changes", "did I get a VIN", "keep monitoring my order", "car carrier arrivals", "where is the ship".
+description: Query the user's Tesla order status from local TOST data, run a polling loop that watches the order and reports each round, look up car-carrier ship arrivals at the delivery port, or check which hardware revision the car was built with in Tesla's parts catalog. Use when the user asks about their Tesla order, delivery window, VIN assignment, order changes, or timeline, asks to keep watching it, or asks about the ship carrying their car, or asks about its hardware (heat pump / Super Manifold version, V2L support, part fitment) — e.g. (zh) 「我的特斯拉訂單」「交車日期」「訂單有什麼變化」「VIN 配了嗎」「幫我盯著訂單」「定期回報訂單」「有汽車船進港嗎」「船到哪了」「熱泵是新版嗎」「有沒有 V2L」; (en) "my Tesla order", "delivery date", "any order changes", "did I get a VIN", "keep monitoring my order", "car carrier arrivals", "where is the ship", "which heat pump does my car have", "does it support V2L".
 ---
 
 # TOST — Tesla Order Status Queries
@@ -12,7 +12,9 @@ under `data/`.
 This file covers one-off questions. For a polling loop that watches the order
 over a period and reports each round, follow [MONITOR.md](MONITOR.md) instead.
 For car-carrier (RoRo) arrivals at the delivery port or following a specific
-ship, follow [VESSEL.md](VESSEL.md).
+ship, follow [VESSEL.md](VESSEL.md). For which hardware revision the
+vehicle was built with (heat-pump module, V2L-capable power electronics,
+accessory fit), follow [PARTS.md](PARTS.md).
 
 ## Commands
 
